@@ -1,3 +1,75 @@
 table(train$Dependents, train$Loan_Status)
 prop.table(table(train$Dependents, train$Loan_Status),2)
+View(train)
+summary(train$Dependents)
+summary(train$Gender)
 
+library(dplyr)
+library(ggplot2)
+library(magrittr)
+qplot(data = train, x = Gender,main = "Gender frequency distribution in train data") + geom_bar()
+train$Gender[train$Gender==''] = 'Male'
+summary(train$Married)
+train$Married[train$Married==''] = 'Yes'
+qplot(data = train, x = Married,main = "Married frequency distribution in train data") + geom_bar()
+train$Dependents[train$Dependents==''] = 0
+summary(train$Education)
+summary(train$Self_Employed)
+train$Self_Employed[train$Self_Employed==''] = 'No'
+summary(train$ApplicantIncome)
+summary(train$CoapplicantIncome)
+summary(train$Loan_Amount)
+qplot(data = train, x = LoanAmount,main = "Loan frequency distribution in train data") + geom_bar()
+hist(train$LoanAmount,main = "Loan Amount in Train data",xlab = "Rating",col = "red")
+str(train$LoanAmount)
+summary(train$Loan_Amount_Term)
+summary(train$LoanAmount)
+train$LoanAmount[is.na(train$LoanAmount)] = 128.0
+hist(train$Loan_Amount_Term,main = "Loan Amount Term in Train data",xlab = "Rating",col = "red")
+unique(train$Loan_Amount_Term)
+train$LoanAmount[is.na(train$Loan_Amount_Term)] = 360
+hist(train$Credit_History, main = "Credit History in Train data",xlab = "Rating",col = "red")
+train$Credit_History[is.na(train$Credit_History)] = 1
+summary(train$Credit_History)
+summary(train$Property_Area)
+summary(train$Loan_Status)
+install.packages("caTools")
+library(caTools)
+train[complete.cases(train),]
+summary(train)
+train$Gender = sub("^$","Male", train$Gender )
+train$Gender = as.factor(train$Gender)
+#sub command needs to be executed for below colums too
+train$Married = as.factor(train$Married)
+train$Dependents = as.factor(train$Dependents)
+train$Loan_Amount_Term = as.factor(train$Loan_Amount_Term)
+train$Credit_History = as.factor(train$Credit_History)
+
+set.seed(88)
+split = sample.split(train$Loan_Status, SplitRatio = 0.75)
+loantrain = subset(train, split == TRUE)
+loantest = subset(train, split == FALSE)
+model = glm(Loan_Status ~.-Loan_ID, data = loantrain, family = binomial)
+summary(model)
+predict = predict(model, type = 'response')
+table(loantrain$Loan_Status, predict>0.5)
+
+library(ROCR)
+install.packages("ROCR")
+library(ROCR)
+ROCRpred = prediction(predict, loantrain$Loan_Status)
+ROCRperf = performance(ROCRpred, 'tpr', 'fpr')
+plot(ROCRperf, colorize = TRUE, text.adj = c(-0.2,1.7))
+
+ggplot(loantrain, aes(x= LoanAmount, y= Loan_Status)) + geom_point() + 
+  stat_smooth(method="glm", family="binomial", se=FALSE)
+contrasts(train$Married)
+model = glm(Loan_Status ~.-Loan_ID -Dependents -ApplicantIncome -Gender -CoapplicantIncome, data = loantrain, family = binomial)
+summary(model)
+anova(model, test="Chisq")
+library(pscl)
+install.packages("pscl")
+pR2(model)
+loansubdata = subset(loantest, select = -c(Loan_ID))
+View(loansubdata)
+fitted.results <- predict(model,newdata = loantest,type='response')
